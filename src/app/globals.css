@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 214 33% 96%;
+    --foreground: 213 43% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 213 43% 15%;
+    --primary: 213 43% 15%;
+    --primary-foreground: 210 30% 98%;
+    --muted: 214 24% 96%;
+    --muted-foreground: 213 12% 42%;
+    --border: 214 22% 90%;
+    --input: 214 26% 82%;
+    --ring: 42 100% 50%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  ::selection {
+    @apply bg-signal/30 text-primary;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-signal ring-offset-2;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg px-5 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-signal {
+    @apply btn bg-signal text-steel-900 hover:bg-signal-400;
+  }
+  .btn-outline {
+    @apply btn border-[1.5px] border-primary bg-white text-primary hover:bg-steel-50;
+  }
+  .btn-dark {
+    @apply btn bg-steel-900 text-white hover:bg-steel-800;
+  }
+  .card {
+    @apply rounded-xl border bg-card;
+  }
+  .field {
+    @apply h-11 w-full rounded-lg border border-input bg-white px-3 text-[15px] text-foreground placeholder:text-muted-foreground;
+  }
+  .badge {
+    @apply inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}
