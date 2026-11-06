@@ -1,8 +1,7 @@
 /**
- * Money helpers. Prices are stored in the DB as integer тиын (1 ₸ = 100 тиын)
- * for precision; the UI works in тенге. Centralizing conversion + formatting
- * here removes the scattered `* 100` / `/ 100` math and keeps rounding
- * consistent everywhere.
+ * Money helpers. In this project the DB stores тенге as numeric(14,2) and all
+ * prices include НДС 16%. The тиын helpers are kept for integrations that send
+ * integer тиын.
  */
 
 const KZT = new Intl.NumberFormat("ru-RU");

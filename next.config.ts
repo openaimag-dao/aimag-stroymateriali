@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // спецификации до 20 МБ загружаются через Server Action (по умолчанию лимит 1 МБ)
   experimental: { serverActions: { bodySizeLimit: "21mb" } },
+  // PDF КП и счетов: библиотека рендерится на сервере, шрифты Inter читаются с диска
+  serverExternalPackages: ["@react-pdf/renderer"],
+  outputFileTracingIncludes: { "/api/documents/**": ["./src/assets/fonts/**"] },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/server";
 import { formatTenge } from "@/lib/money";
+import { formatDocDate } from "@/lib/documents";
 import { siteConfig } from "@/config/site";
 import { RegisterCompanyForm } from "@/components/account/register-company-form";
 import { signOut } from "./actions";
@@ -18,13 +19,13 @@ const statuses: Record<string, { label: string; cls: string }> = {
   cancelled: { label: "Отменён", cls: "bg-steel-50 text-steel-500" },
 };
 
-type OrderRow = {
+type QuoteRow = {
   id: string;
-  invoice_number: string | null;
-  status: string;
-  total_kzt: number;
+  number: string;
   created_at: string;
-  quotes: { number: string } | null;
+  valid_until: string;
+  total_kzt: number;
+  orders: { invoice_number: string | null; status: string } | { invoice_number: string | null; status: string }[] | null;
 };
 
 export default async function AccountPage() {
@@ -47,12 +48,13 @@ export default async function AccountPage() {
     );
   }
 
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("id, invoice_number, status, total_kzt, created_at, quotes(number)")
+  const { data: quotes } = await supabase
+    .from("quotes")
+    .select("id, number, created_at, valid_until, total_kzt, orders(invoice_number, status)")
     .eq("company_id", company.id)
     .order("created_at", { ascending: false })
     .limit(50);
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Almaty" });
 
   return (
     <div className="container flex flex-col gap-5 py-8">
@@ -75,10 +77,10 @@ export default async function AccountPage() {
       </section>
 
       <section aria-labelledby="orders-h" className="card overflow-hidden">
-        <h2 id="orders-h" className="px-6 pb-2 pt-5 text-[19px] font-semibold">Заказы и счета</h2>
-        {!orders || orders.length === 0 ? (
+        <h2 id="orders-h" className="px-6 pb-2 pt-5 text-[19px] font-semibold">КП и счета</h2>
+        {!quotes || quotes.length === 0 ? (
           <p className="px-6 pb-6 text-steel-500">
-            Заказов пока нет. Соберите корзину в <Link href="/catalog" className="font-semibold underline">каталоге</Link> или{" "}
+            Документов пока нет. Соберите корзину в <Link href="/catalog" className="font-semibold underline">каталоге</Link> или{" "}
             <Link href="/spec" className="font-semibold underline">загрузите спецификацию</Link>.
           </p>
         ) : (
@@ -86,23 +88,30 @@ export default async function AccountPage() {
             <table className="w-full min-w-[720px] border-collapse text-[15px]">
               <thead>
                 <tr className="text-left text-[13px] text-muted-foreground">
-                  <th scope="col" className="px-6 py-3 font-medium">Счёт / КП</th>
+                  <th scope="col" className="px-6 py-3 font-medium">Документ</th>
                   <th scope="col" className="px-3 py-3 font-medium">Дата</th>
                   <th scope="col" className="px-3 py-3 text-right font-medium">Сумма с НДС</th>
                   <th scope="col" className="px-6 py-3 font-medium">Статус</th>
                 </tr>
               </thead>
               <tbody>
-                {(orders as unknown as OrderRow[]).map((o) => {
-                  const s = statuses[o.status] ?? statuses.awaiting_payment;
+                {(quotes as unknown as QuoteRow[]).map((q) => {
+                  const order = Array.isArray(q.orders) ? q.orders[0] : q.orders;
+                  const s = order
+                    ? (statuses[order.status] ?? statuses.awaiting_payment)
+                    : q.valid_until < today
+                      ? { label: "КП истекло", cls: "bg-steel-50 text-steel-500" }
+                      : { label: "КП, счёт не выставлен", cls: "bg-steel-100 text-steel-700" };
                   return (
-                    <tr key={o.id} className="border-t border-steel-100">
+                    <tr key={q.id} className="border-t border-steel-100">
                       <td className="px-6 py-4">
-                        <div className="font-semibold">{o.invoice_number ? `Счёт № ${o.invoice_number}` : "Счёт готовится"}</div>
-                        <div className="text-[13px] text-muted-foreground">КП № {o.quotes?.number}</div>
+                        <Link href={`/account/quotes/${q.id}`} className="font-semibold underline-offset-4 hover:underline">
+                          КП № {q.number}
+                        </Link>
+                        {order?.invoice_number && <div className="text-[13px] text-muted-foreground">Счёт № {order.invoice_number}</div>}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4">{new Date(o.created_at).toLocaleDateString("ru-RU")}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-right tabular-nums">{formatTenge(Number(o.total_kzt))}</td>
+                      <td className="whitespace-nowrap px-3 py-4">{formatDocDate(q.created_at)}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-right tabular-nums">{formatTenge(Number(q.total_kzt))}</td>
                       <td className="px-6 py-4"><span className={`badge ${s.cls}`}>{s.label}</span></td>
                     </tr>
                   );

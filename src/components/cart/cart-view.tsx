@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Download, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { FileText, Trash2 } from "lucide-react";
 import { useCart } from "./cart-provider";
 import { totals } from "@/lib/pricing";
 import { formatTenge } from "@/lib/money";
 import { siteConfig } from "@/config/site";
+import { checkout } from "@/app/cart/actions";
+
+export type CheckoutStatus = "guest" | "no_company" | "ready";
 
 const deliveries = [
   { id: "pickup", name: "Самовывоз", note: `${siteConfig.city}, бесплатно` },
@@ -14,9 +18,34 @@ const deliveries = [
   { id: "intercity", name: "По Казахстану", note: "транспортной компанией, 1–3 дня" },
 ] as const;
 
-export function CartView() {
-  const { items, setQty, remove } = useCart();
+export function CartView({ status }: { status: CheckoutStatus }) {
+  const { items, setQty, remove, clear } = useCart();
+  const router = useRouter();
   const [delivery, setDelivery] = useState<(typeof deliveries)[number]["id"]>("pickup");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
+  const [error, setError] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function submit(withInvoice: boolean) {
+    setError("");
+    startTransition(async () => {
+      const res = await checkout({
+        items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
+        delivery,
+        city: delivery === "intercity" ? city : delivery === "city" ? siteConfig.city : undefined,
+        address: delivery === "pickup" ? undefined : address,
+        withInvoice,
+      });
+      if (res.error || !res.quoteId) {
+        setError(res.error ?? "Не удалось сформировать документ.");
+        return;
+      }
+      clear();
+      const q = res.invoiceErrorCode ? `?invoice_error=${res.invoiceErrorCode}` : "";
+      router.push(`/account/quotes/${res.quoteId}${q}`);
+    });
+  }
 
   if (items.length === 0) {
     return (
@@ -95,7 +124,19 @@ export function CartView() {
             ))}
           </div>
           {delivery !== "pickup" && (
-            <p className="text-sm text-steel-500">Стоимость доставки менеджер добавит в КП по весу заказа и адресу объекта.</p>
+            <div className="flex flex-wrap gap-3">
+              {delivery === "intercity" && (
+                <label className="flex flex-[1_1_200px] flex-col gap-1.5 text-[13px] text-muted-foreground">
+                  Город доставки
+                  <input value={city} onChange={(e) => setCity(e.target.value)} maxLength={120} className="field" placeholder="Туркестан" />
+                </label>
+              )}
+              <label className="flex flex-[2_1_320px] flex-col gap-1.5 text-[13px] text-muted-foreground">
+                Адрес объекта
+                <input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={300} className="field" placeholder="Улица, дом, ориентир" />
+              </label>
+              <p className="w-full text-sm text-steel-500">Стоимость доставки менеджер рассчитает по весу заказа и адресу и выставит отдельно.</p>
+            </div>
           )}
         </section>
       </div>
@@ -105,16 +146,34 @@ export function CartView() {
         <dl className="flex flex-col gap-2.5 text-[15px] tabular-nums">
           <Row label="Товары без НДС" value={formatTenge(t.netKzt)} />
           <Row label={`НДС ${siteConfig.vatPct}%`} value={formatTenge(t.vatKzt)} />
-          <Row label="Доставка" value={delivery === "pickup" ? formatTenge(0) : "в КП"} />
+          <Row label="Доставка" value={delivery === "pickup" ? formatTenge(0) : "отдельно"} />
           <div className="flex justify-between gap-3 border-t pt-3 text-xl font-bold">
             <dt>К оплате с НДС</dt>
             <dd>{formatTenge(t.totalKzt)}</dd>
           </div>
         </dl>
-        <Link href="/login?next=/cart" className="btn-signal h-[52px] text-base">Выставить счёт на оплату</Link>
-        <Link href="/login?next=/cart" className="btn-outline h-[52px] text-base">
-          <Download className="h-[18px] w-[18px]" aria-hidden="true" /> Скачать КП в PDF
-        </Link>
+        {status === "ready" && (
+          <>
+            <button type="button" disabled={pending} onClick={() => submit(true)} className="btn-signal h-[52px] text-base">
+              {pending ? "Формируем документы…" : "Выставить счёт на оплату"}
+            </button>
+            <button type="button" disabled={pending} onClick={() => submit(false)} className="btn-outline h-[52px] text-base">
+              <FileText className="h-[18px] w-[18px]" aria-hidden="true" /> Получить КП в PDF
+            </button>
+          </>
+        )}
+        {status === "guest" && (
+          <>
+            <Link href="/login?next=/cart" className="btn-signal h-[52px] text-base">Войти и выставить счёт</Link>
+            <p className="text-[13px] text-muted-foreground">Счёт и КП оформляются на реквизиты вашей компании — нужен вход по email и БИН.</p>
+          </>
+        )}
+        {status === "no_company" && (
+          <Link href="/account" className="btn-signal h-[52px] text-base">Указать данные компании</Link>
+        )}
+        {error && (
+          <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>
+        )}
         <p className="text-[13px] leading-relaxed text-muted-foreground">
           КП действует {siteConfig.quoteValidDays} дней. Оптовая цена по объёму применяется при выставлении. Товар под заказ — по 100%
           предоплате. Вопросы: <a href={siteConfig.phoneHref} className="font-semibold text-foreground">{siteConfig.phone}</a>
