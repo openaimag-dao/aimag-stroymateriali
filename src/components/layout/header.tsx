@@ -3,10 +3,12 @@ import { Search } from "lucide-react";
 import { Logo } from "./logo";
 import { CartLink } from "@/components/cart/cart-link";
 import { getUser } from "@/lib/supabase/server";
+import { isStaff } from "@/lib/staff";
 import { siteConfig } from "@/config/site";
 
 export async function Header() {
   const user = await getUser();
+  const staff = user ? await isStaff() : false;
   return (
     <header className="border-b bg-white">
       <div className="container flex flex-wrap items-center gap-x-7 gap-y-3 py-3.5">
@@ -31,6 +33,7 @@ export async function Header() {
           <Link href="/spec" className="hover:text-signal-800">Спецификация</Link>
           <CartLink />
           <a href={siteConfig.phoneHref} className="font-semibold">{siteConfig.phone}</a>
+          {staff && <Link href="/admin" className="font-semibold text-signal-800">Админка</Link>}
           {user ? (
             <Link href="/account" className="font-semibold hover:text-signal-800">Кабинет</Link>
           ) : (

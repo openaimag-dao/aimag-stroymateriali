@@ -123,7 +123,7 @@ export function InvoicePdf({ doc }: { doc: QuoteDoc }) {
             <Text style={{ fontSize: 8, color: C.muted }}>Доставка в счёт не включена и оплачивается отдельно.</Text>
           ) : null}
 
-          <Signature seller={seller} role="Исполнитель" />
+          <Signature seller={seller} role="Исполнитель" images={doc.images} />
         </View>
         <PageFooter text={`Счёт № ${order.invoice_number} · ${siteConfig.phone}`} />
       </Page>

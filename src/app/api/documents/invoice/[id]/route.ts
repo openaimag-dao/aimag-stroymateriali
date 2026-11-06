@@ -1,6 +1,6 @@
 import { createElement, type ReactElement } from "react";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
-import { getQuoteDoc, getQuoteIdForOrder } from "@/lib/documents";
+import { getQuoteDoc, getQuoteIdForOrder, loadSellerImages } from "@/lib/documents";
 import { registerFonts } from "@/components/documents/pdf-base";
 import { InvoicePdf } from "@/components/documents/invoice-pdf";
 
@@ -13,6 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const doc = quoteId ? await getQuoteDoc(quoteId) : null;
   if (!doc || !doc.order?.invoice_number) return new Response("Not found", { status: 404 });
 
+  doc.images = await loadSellerImages(doc.seller);
   registerFonts();
   const pdf = await renderToBuffer(createElement(InvoicePdf, { doc }) as unknown as ReactElement<DocumentProps>);
   const file = `Счёт ${doc.order.invoice_number}.pdf`;

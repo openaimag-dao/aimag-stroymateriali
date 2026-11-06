@@ -42,6 +42,8 @@ export type DocOrder = {
   vat_kzt: number;
 };
 
+export type PdfImage = { data: Buffer; format: "png" | "jpg" };
+
 export type QuoteDoc = {
   id: string;
   number: string;
@@ -58,6 +60,7 @@ export type QuoteDoc = {
   seller: DocSeller;
   lines: DocLine[];
   order: DocOrder | null;
+  images?: { stamp?: PdfImage; signature?: PdfImage };
 };
 
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
@@ -112,6 +115,23 @@ export async function getQuoteDoc(id: string): Promise<QuoteDoc | null> {
 
 function normalizeOrder(o: DocOrder | null): DocOrder | null {
   return o ? { ...o, total_kzt: Number(o.total_kzt), vat_kzt: Number(o.vat_kzt) } : null;
+}
+
+/**
+ * Stamp and signature bytes for the PDF. The bucket is private; the visitor's own session reads them
+ * (any signed-in user may), and the image is embedded into the PDF rather than linked.
+ */
+export async function loadSellerImages(seller: DocSeller): Promise<NonNullable<QuoteDoc["images"]>> {
+  const supabase = await getSupabase();
+  if (!supabase) return {};
+  const get = async (path: string | null): Promise<PdfImage | undefined> => {
+    if (!path || path.includes("://")) return undefined;
+    const { data, error } = await supabase.storage.from("branding").download(path);
+    if (error || !data) return undefined;
+    return { data: Buffer.from(await data.arrayBuffer()), format: path.toLowerCase().endsWith(".png") ? "png" : "jpg" };
+  };
+  const [stamp, signature] = await Promise.all([get(seller.stamp_url), get(seller.signature_url)]);
+  return { stamp, signature };
 }
 
 /** Finds the КП behind an invoice (order id), so the invoice PDF reuses the same snapshot. */

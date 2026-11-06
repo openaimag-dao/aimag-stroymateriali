@@ -103,7 +103,7 @@ export function QuotePdf({ doc }: { doc: QuoteDoc }) {
             ))}
           </View>
 
-          <Signature seller={doc.seller} role="Директор" />
+          <Signature seller={doc.seller} role="Директор" images={doc.images} />
         </View>
         <PageFooter text={`${doc.number} · вопросы по предложению: ${siteConfig.phone}`} />
       </Page>
