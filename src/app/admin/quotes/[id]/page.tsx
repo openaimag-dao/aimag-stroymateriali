@@ -4,7 +4,7 @@ import { requireStaff } from "@/lib/staff";
 import { deliveryLabel, formatDocDate, getQuoteDoc } from "@/lib/documents";
 import { formatTenge } from "@/lib/money";
 import { orderStatuses } from "@/lib/order-statuses";
-import { setOrderStatus, staffIssueInvoice, updateQuote } from "./actions";
+import { setOrderStatus, staffEmailQuote, staffIssueInvoice, updateQuote } from "./actions";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string }> };
 
@@ -40,6 +40,9 @@ export default async function AdminQuote({ params, searchParams }: Props) {
           {order?.invoice_number && (
             <a href={`/api/documents/invoice/${order.id}`} target="_blank" rel="noopener" className="btn-outline">Счёт PDF</a>
           )}
+          <form action={staffEmailQuote.bind(null, doc.id)}>
+            <button type="submit" className="btn-outline">Отправить покупателю на почту</button>
+          </form>
         </div>
       </section>
       {msg && <p role="status" className="rounded-lg bg-steel-100 p-3 text-sm">{msg}</p>}
