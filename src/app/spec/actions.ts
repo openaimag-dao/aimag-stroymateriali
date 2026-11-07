@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { getSupabase } from "@/lib/supabase/server";
+import { notifyStaffAboutSpec } from "@/lib/notifications";
 
 const MAX_BYTES = 20 * 1024 * 1024;
 const ALLOWED = /\.(xlsx?|csv|pdf|docx?|jpe?g|png|heic)$/i;
@@ -19,7 +21,7 @@ export async function uploadSpec(_prev: UploadState, form: FormData): Promise<Up
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { error: "Войдите, чтобы отправить спецификацию" };
 
-  const { data: company } = await supabase.from("companies").select("id").limit(1).maybeSingle();
+  const { data: company } = await supabase.from("companies").select("id, name, legal_form").limit(1).maybeSingle();
   if (!company) return { error: "Сначала укажите данные компании в кабинете" };
 
   // Keep the original name for people, but store under a safe generated key.
@@ -34,6 +36,7 @@ export async function uploadSpec(_prev: UploadState, form: FormData): Promise<Up
     .insert({ company_id: company.id, file_path: path, file_name: file.name.slice(0, 200) });
   if (rowErr) return { error: "Файл загружен, но заявка не сохранилась. Позвоните нам." };
 
+  after(() => notifyStaffAboutSpec(company, file.name));
   revalidatePath("/spec");
   return { ok: true, fileName: file.name };
 }
