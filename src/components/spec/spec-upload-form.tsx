@@ -20,7 +20,7 @@ export function SpecUploadForm() {
   if (state?.ok) {
     return (
       <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
-        <b>Заявка «{state.fileName}» принята.</b> Менеджер проверит позиции и пришлёт КП в течение{" "}
+        <b>Заявка «{state.fileName}» принята.</b> Сопоставляем позиции с каталогом — менеджер проверит их и пришлёт КП в течение{" "}
         {siteConfig.specResponseMinutes} минут в рабочее время.
       </div>
     );

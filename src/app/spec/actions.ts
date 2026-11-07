@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { getSupabase } from "@/lib/supabase/server";
 import { notifyStaffAboutSpec } from "@/lib/notifications";
+import { parseSpec } from "@/lib/spec-ai/parse";
 
 const MAX_BYTES = 20 * 1024 * 1024;
 const ALLOWED = /\.(xlsx?|csv|pdf|docx?|jpe?g|png|heic)$/i;
@@ -31,12 +32,18 @@ export async function uploadSpec(_prev: UploadState, form: FormData): Promise<Up
   const { error: upErr } = await supabase.storage.from("specs").upload(path, file, { contentType: file.type || undefined });
   if (upErr) return { error: "Не удалось загрузить файл. Попробуйте ещё раз." };
 
-  const { error: rowErr } = await supabase
+  const { data: spec, error: rowErr } = await supabase
     .from("specs")
-    .insert({ company_id: company.id, file_path: path, file_name: file.name.slice(0, 200) });
-  if (rowErr) return { error: "Файл загружен, но заявка не сохранилась. Позвоните нам." };
+    .insert({ company_id: company.id, file_path: path, file_name: file.name.slice(0, 200) })
+    .select("id")
+    .single();
+  if (rowErr || !spec) return { error: "Файл загружен, но заявка не сохранилась. Позвоните нам." };
 
-  after(() => notifyStaffAboutSpec(company, file.name));
+  // После ответа: письмо менеджеру и разбор ИИ (черновик позиций для менеджера, обычно 1–3 минуты).
+  after(async () => {
+    await notifyStaffAboutSpec(company, file.name);
+    await parseSpec(spec.id as string);
+  });
   revalidatePath("/spec");
   return { ok: true, fileName: file.name };
 }

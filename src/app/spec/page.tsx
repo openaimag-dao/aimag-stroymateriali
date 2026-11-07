@@ -6,6 +6,8 @@ import { SpecUploadForm } from "@/components/spec/spec-upload-form";
 
 export const metadata: Metadata = { title: "Загрузить спецификацию" };
 export const dynamic = "force-dynamic";
+// разбор спецификации ИИ идёт после ответа в той же функции и может занять несколько минут
+export const maxDuration = 300;
 
 const specStatus: Record<string, { label: string; cls: string }> = {
   parsing: { label: "Разбираем", cls: "bg-steel-100 text-steel-700" },
@@ -19,7 +21,7 @@ export default async function SpecPage() {
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   const { data: specs } =
     supabase && user
-      ? await supabase.from("specs").select("id, file_name, status, created_at").order("created_at", { ascending: false }).limit(20)
+      ? await supabase.from("specs").select("id, file_name, status, ai_status, created_at, spec_items(match_status)").order("created_at", { ascending: false }).limit(20)
       : { data: null };
 
   return (
@@ -57,11 +59,20 @@ export default async function SpecPage() {
             <tbody>
               {specs.map((s) => {
                 const st = specStatus[s.status] ?? specStatus.parsing;
+                const items = (s.spec_items ?? []) as { match_status: string }[];
+                const found = items.filter((i) => i.match_status === "found").length;
                 return (
                   <tr key={s.id} className="border-t border-steel-100">
                     <td className="break-all px-6 py-4 font-semibold">{s.file_name}</td>
                     <td className="whitespace-nowrap px-3 py-4">{new Date(s.created_at).toLocaleString("ru-RU")}</td>
-                    <td className="px-6 py-4"><span className={`badge ${st.cls}`}>{st.label}</span></td>
+                    <td className="px-6 py-4">
+                      <span className={`badge ${st.cls}`}>{st.label}</span>
+                      {s.status === "review" && s.ai_status === "done" && items.length > 0 && (
+                        <div className="mt-1 text-[13px] text-muted-foreground">
+                          Нашли в каталоге {found} из {items.length} позиций, менеджер проверяет
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
