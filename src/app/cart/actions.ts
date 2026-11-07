@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { getSupabase } from "@/lib/supabase/server";
 import { documentErrorCode, documentErrorText } from "@/lib/documents";
+import { emailQuoteToBuyer, notifyStaffAboutQuote } from "@/lib/notifications";
 
 // Only ids and quantities come from the browser; prices are taken from the DB in create_quote.
 const schema = z.object({
@@ -41,6 +43,14 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     const { error: invErr } = await supabase.rpc("issue_invoice", { p_quote_id: quoteId });
     if (invErr) invoiceErrorCode = documentErrorCode(invErr.message);
   }
+
+  // Письма — после ответа, чтобы покупатель не ждал PDF и почту.
+  const { data: auth } = await supabase.auth.getUser();
+  const id = quoteId as string;
+  after(async () => {
+    await emailQuoteToBuyer(id, [auth.user?.email]);
+    await notifyStaffAboutQuote(id);
+  });
 
   revalidatePath("/account");
   return { quoteId: quoteId as string, invoiceErrorCode };

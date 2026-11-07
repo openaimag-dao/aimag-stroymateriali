@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { getSupabase } from "@/lib/supabase/server";
 import { documentErrorCode } from "@/lib/documents";
+import { emailQuoteToBuyer, notifyStaffAboutQuote } from "@/lib/notifications";
 
 export async function issueInvoice(quoteId: string) {
   const supabase = await getSupabase();
@@ -12,5 +14,10 @@ export async function issueInvoice(quoteId: string) {
   revalidatePath(`/account/quotes/${quoteId}`);
   revalidatePath("/account");
   if (error) redirect(`/account/quotes/${quoteId}?invoice_error=${documentErrorCode(error.message)}`);
+  const { data: auth } = await supabase.auth.getUser();
+  after(async () => {
+    await emailQuoteToBuyer(quoteId, [auth.user?.email]);
+    await notifyStaffAboutQuote(quoteId);
+  });
   redirect(`/account/quotes/${quoteId}`);
 }

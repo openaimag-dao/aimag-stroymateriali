@@ -1,6 +1,6 @@
 import path from "node:path";
 import { Font, Image, StyleSheet, Text, View } from "@react-pdf/renderer";
-import type { DocCompany, DocSeller, QuoteDoc } from "@/lib/documents";
+import type { DocSeller, QuoteDoc } from "@/lib/documents";
 
 // Фирменный стиль КП AIMAG: тёмно-синяя шапка, янтарная полоса, Inter.
 export const C = {
@@ -92,9 +92,7 @@ export function DocHeader({ seller }: { seller: DocSeller }) {
   );
 }
 
-export function companyTitle(c: DocCompany) {
-  return c.legal_form && c.legal_form !== "Другое" ? `${c.legal_form} «${c.name}»` : c.name;
-}
+export { companyTitle } from "@/lib/company-title";
 
 /** Director line, with the seller's stamp and signature embedded when they are uploaded. */
 export function Signature({ seller, role, images }: { seller: DocSeller; role: string; images?: QuoteDoc["images"] }) {

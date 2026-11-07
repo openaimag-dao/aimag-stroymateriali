@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSupabase } from "@/lib/supabase/server";
 import { isValidBin, normalizeBin } from "@/lib/bin";
+import { lookupBin, type BinInfo } from "@/lib/bin-lookup";
 
 const schema = z.object({
   bin: z.string().transform(normalizeBin).refine(isValidBin, "БИН/ИИН не прошёл проверку контрольной цифры"),
@@ -53,6 +54,28 @@ export async function registerCompany(_prev: RegisterState, form: FormData): Pro
   }
   revalidatePath("/account");
   return undefined;
+}
+
+export type BinLookupState = { info?: BinInfo; error?: string };
+
+/** Реквизиты из реестра stat.gov.kz для автозаполнения формы. Только для вошедших — чтобы сайт не стал открытым прокси к реестру. */
+export async function lookupCompanyByBin(raw: string): Promise<BinLookupState> {
+  const bin = normalizeBin(raw);
+  if (!isValidBin(bin)) return { error: "БИН/ИИН не прошёл проверку контрольной цифры" };
+
+  const supabase = await getSupabase();
+  if (!supabase) return { error: "База не подключена" };
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { error: "Войдите, чтобы заполнить реквизиты" };
+
+  const res = await lookupBin(bin);
+  if (res.ok) return { info: res.info };
+  return {
+    error:
+      res.reason === "not_found"
+        ? "В реестре stat.gov.kz такой БИН не найден — заполните реквизиты вручную."
+        : "Реестр stat.gov.kz сейчас не отвечает — заполните реквизиты вручную.",
+  };
 }
 
 export async function signOut() {

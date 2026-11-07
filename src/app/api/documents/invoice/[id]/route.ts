@@ -1,8 +1,5 @@
-import { createElement, type ReactElement } from "react";
-import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
-import { getQuoteDoc, getQuoteIdForOrder, loadSellerImages } from "@/lib/documents";
-import { registerFonts } from "@/components/documents/pdf-base";
-import { InvoicePdf } from "@/components/documents/invoice-pdf";
+import { getQuoteDoc, getQuoteIdForOrder } from "@/lib/documents";
+import { pdfFileNames, renderInvoicePdf } from "@/lib/pdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,14 +10,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const doc = quoteId ? await getQuoteDoc(quoteId) : null;
   if (!doc || !doc.order?.invoice_number) return new Response("Not found", { status: 404 });
 
-  doc.images = await loadSellerImages(doc.seller);
-  registerFonts();
-  const pdf = await renderToBuffer(createElement(InvoicePdf, { doc }) as unknown as ReactElement<DocumentProps>);
-  const file = `Счёт ${doc.order.invoice_number}.pdf`;
+  const pdf = await renderInvoicePdf(doc);
+  const f = pdfFileNames(doc, "invoice");
   return new Response(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="invoice-${doc.order.invoice_number}.pdf"; filename*=UTF-8''${encodeURIComponent(file)}`,
+      "Content-Disposition": `inline; filename="${f.ascii}"; filename*=UTF-8''${encodeURIComponent(f.utf8)}`,
       "Cache-Control": "private, no-store",
     },
   });
