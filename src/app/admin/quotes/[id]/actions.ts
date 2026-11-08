@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/staff";
-import { emailQuoteToBuyer, type EmailResult } from "@/lib/notifications";
+import { emailOrderStatus, emailQuoteToBuyer, type EmailResult } from "@/lib/notifications";
 
 const errText: Record<string, string> = {
   invoice_exists: "Счёт уже выставлен — доставку и продавца менять нельзя. Нужен новый КП.",
@@ -49,7 +49,13 @@ export async function staffEmailQuote(quoteId: string) {
 
 export async function setOrderStatus(quoteId: string, orderId: string, form: FormData) {
   const { supabase } = await requireStaff();
-  const { error } = await supabase.rpc("staff_set_order_status", { p_order_id: orderId, p_status: String(form.get("status")) });
+  const status = String(form.get("status"));
+  const { data: before } = await supabase.from("orders").select("status").eq("id", orderId).maybeSingle();
+  const { error } = await supabase.rpc("staff_set_order_status", { p_order_id: orderId, p_status: status });
   revalidatePath(`/admin/quotes/${quoteId}`);
-  back(quoteId, error ? text(error.message) : "Статус обновлён");
+  if (error) back(quoteId, text(error.message));
+  // письмо покупателю — только если статус действительно сменился
+  if (before?.status === status) back(quoteId, "Статус не изменился");
+  const sent = await emailOrderStatus(quoteId, status);
+  back(quoteId, sent === "sent" ? "Статус обновлён, покупателю отправлено письмо" : sent === "not_configured" ? "Статус обновлён" : `Статус обновлён; ${emailText[sent]}`);
 }

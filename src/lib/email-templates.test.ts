@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { documentEmail, escapeHtml, staffSpecEmail } from "./email-templates";
+import { documentEmail, escapeHtml, inviteEmail, orderStatusEmail, staffSpecEmail } from "./email-templates";
 import { formatTenge } from "./money";
 
 const base = {
@@ -44,4 +44,22 @@ describe("staffSpecEmail", () => {
 
 it("escapeHtml handles all special characters", () => {
   expect(escapeHtml(`&<>"'`)).toBe("&amp;&lt;&gt;&quot;&#39;");
+});
+
+describe("inviteEmail", () => {
+  it("tells which address to sign in with", () => {
+    const e = inviteEmail({ companyTitle: "ТОО «Ромашка»", role: "бухгалтер", loginUrl: "https://x/login?next=/account", email: "a@b.kz" });
+    expect(e.subject).toContain("ТОО «Ромашка»");
+    expect(e.text).toContain("a@b.kz");
+    expect(e.html).toContain('href="https://x/login?next=/account"');
+  });
+});
+
+describe("orderStatusEmail", () => {
+  it("writes about paid, shipped, delivered and cancelled only", () => {
+    const base = { invoiceNumber: "261108-01", totalKzt: 5000, accountUrl: "https://x/account" };
+    expect(orderStatusEmail({ ...base, status: "shipped" })?.subject).toBe("Заказ отгружен: счёт № 261108-01");
+    expect(orderStatusEmail({ ...base, status: "paid" })?.text).toContain(formatTenge(5000));
+    expect(orderStatusEmail({ ...base, status: "awaiting_payment" })).toBeNull();
+  });
 });

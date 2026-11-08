@@ -74,3 +74,31 @@ export function staffSpecEmail(d: { companyTitle: string; fileName: string; admi
   const text = [subject, "", ...paragraphs, "", d.adminUrl].join("\n");
   return { subject, text, html: layout(subject, paragraphs, { url: d.adminUrl, label: "Открыть спецификации" }) };
 }
+
+export function inviteEmail(d: { companyTitle: string; role: string; loginUrl: string; email: string }): EmailContent {
+  const subject = `Приглашение в кабинет ${d.companyTitle} — ${siteConfig.name}`;
+  const paragraphs = [
+    `Вас добавили в кабинет ${d.companyTitle} как ${d.role}.`,
+    `Войдите на сайт с адресом ${d.email} — ссылка для входа придёт на эту почту, пароль не нужен. В кабинете нажмите «Присоединиться».`,
+    "После этого вам будут доступны оптовые цены, корзина, КП и счета компании.",
+  ];
+  const text = [subject, "", ...paragraphs, "", d.loginUrl].join("\n");
+  return { subject, text, html: layout(subject, paragraphs, { url: d.loginUrl, label: "Войти и присоединиться" }) };
+}
+
+const ORDER_STATUS_TEXT: Record<string, { title: string; body: string }> = {
+  paid: { title: "Оплата получена", body: "Мы получили оплату и готовим заказ к отгрузке." },
+  shipped: { title: "Заказ отгружен", body: "Заказ отгружен со склада и едет к вам." },
+  delivered: { title: "Заказ доставлен", body: "Заказ доставлен. Спасибо, что работаете с нами!" },
+  cancelled: { title: "Заказ отменён", body: "Заказ отменён. Если это ошибка — позвоните нам." },
+};
+
+/** Письмо покупателю о смене статуса заказа; null — для статусов, о которых не пишем. */
+export function orderStatusEmail(d: { status: string; invoiceNumber: string; totalKzt: number; accountUrl: string }): EmailContent | null {
+  const t = ORDER_STATUS_TEXT[d.status];
+  if (!t) return null;
+  const subject = `${t.title}: счёт № ${d.invoiceNumber}`;
+  const paragraphs = [t.body, `Счёт № ${d.invoiceNumber} на ${formatTenge(d.totalKzt)}.`];
+  const text = [subject, "", ...paragraphs, "", d.accountUrl].join("\n");
+  return { subject, text, html: layout(subject, paragraphs, { url: d.accountUrl, label: "Открыть в кабинете" }) };
+}
