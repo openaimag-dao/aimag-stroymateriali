@@ -1,7 +1,7 @@
 import "server-only";
 import { getQuoteDoc, formatDocDate, type QuoteDoc } from "@/lib/documents";
 import { companyTitle } from "@/lib/company-title";
-import { documentEmail, staffQuoteEmail, staffSpecEmail, type DocEmailInput } from "@/lib/email-templates";
+import { documentEmail, inviteEmail, orderStatusEmail, staffQuoteEmail, staffSpecEmail, type DocEmailInput } from "@/lib/email-templates";
 import { isEmailConfigured, salesNotifyEmails, sendEmail, type Attachment } from "@/lib/email";
 import { pdfFileNames, renderInvoicePdf, renderQuotePdf } from "@/lib/pdf";
 import { getSupabase } from "@/lib/supabase/server";
@@ -61,4 +61,33 @@ export async function notifyStaffAboutQuote(quoteId: string): Promise<void> {
 export async function notifyStaffAboutSpec(company: { name: string; legal_form: string | null }, fileName: string): Promise<void> {
   if (!isEmailConfigured() || salesNotifyEmails.length === 0) return;
   await sendEmail(salesNotifyEmails, staffSpecEmail({ companyTitle: companyTitle(company), fileName, adminUrl: `${siteUrl()}/admin/specs` }));
+}
+
+const roleLabel: Record<string, string> = { buyer: "закупщика", accountant: "бухгалтера" };
+
+/** Приглашение сотруднику: войти с этим email и нажать «Присоединиться». */
+export async function emailInvite(email: string, role: string, company: { name: string; legal_form: string | null }): Promise<EmailResult> {
+  if (!isEmailConfigured()) return "not_configured";
+  const ok = await sendEmail(
+    [email],
+    inviteEmail({ companyTitle: companyTitle(company), role: roleLabel[role] ?? "сотрудника", email, loginUrl: `${siteUrl()}/login?next=/account` }),
+  );
+  return ok ? "sent" : "failed";
+}
+
+/** Покупателю — о смене статуса заказа (оплачен, отгружен, доставлен, отменён). */
+export async function emailOrderStatus(quoteId: string, status: string): Promise<EmailResult> {
+  if (!isEmailConfigured()) return "not_configured";
+  const doc = await getQuoteDoc(quoteId);
+  if (!doc?.order?.invoice_number) return "failed";
+  const content = orderStatusEmail({
+    status,
+    invoiceNumber: doc.order.invoice_number,
+    totalKzt: doc.order.total_kzt,
+    accountUrl: `${siteUrl()}/account/quotes/${doc.id}`,
+  });
+  if (!content) return "not_configured";
+  const to = await companyInvoiceEmail(quoteId);
+  if (!to) return "no_recipient";
+  return (await sendEmail([to], content)) ? "sent" : "failed";
 }

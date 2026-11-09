@@ -6,6 +6,8 @@ import { formatTenge } from "@/lib/money";
 import { formatDocDate } from "@/lib/documents";
 import { siteConfig } from "@/config/site";
 import { RegisterCompanyForm } from "@/components/account/register-company-form";
+import { AcceptInviteCard, InviteForm, RemoveMemberButton, RevokeInviteButton, roleLabels } from "@/components/account/team";
+import { companyTitle } from "@/lib/company-title";
 import { signOut } from "./actions";
 
 export const metadata: Metadata = { title: "Кабинет компании" };
@@ -18,6 +20,9 @@ const statuses: Record<string, { label: string; cls: string }> = {
   delivered: { label: "Доставлен", cls: "bg-emerald-50 text-emerald-800" },
   cancelled: { label: "Отменён", cls: "bg-steel-50 text-steel-500" },
 };
+
+type Invite = { id: string; company_name: string; legal_form: string | null; bin: string; role: string; created_at: string };
+type Member = { user_id: string; full_name: string | null; phone: string | null; role: string; email: string; is_me: boolean };
 
 type QuoteRow = {
   id: string;
@@ -41,12 +46,39 @@ export default async function AccountPage() {
     .maybeSingle();
 
   if (!company) {
+    // приглашения на email вошедшего (функция отдаёт название компании, которую он пока не видит)
+    const { data: invites } = await supabase.rpc("my_invites");
+    const list = (invites ?? []) as Invite[];
     return (
-      <div className="container max-w-[760px] py-10">
+      <div className="container flex max-w-[760px] flex-col gap-6 py-10">
+        {list.map((i) => (
+          <AcceptInviteCard
+            key={i.id}
+            inviteId={i.id}
+            companyTitle={companyTitle({ name: i.company_name, legal_form: i.legal_form })}
+            bin={i.bin}
+            role={i.role}
+          />
+        ))}
+        {list.length > 0 && <p className="text-sm text-muted-foreground">Или зарегистрируйте другую компанию:</p>}
         <RegisterCompanyForm />
+        {list.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Компания уже зарегистрирована коллегой? Попросите владельца кабинета пригласить вас по email {auth.user.email} — приглашение
+            появится здесь.
+          </p>
+        )}
       </div>
     );
   }
+
+  const [{ data: memberRows }, { data: inviteRows }] = await Promise.all([
+    supabase.rpc("my_company_members"),
+    supabase.from("company_invites").select("id, email, role, created_at").is("accepted_at", null).order("created_at"),
+  ]);
+  const members = (memberRows ?? []) as Member[];
+  const openInvites = (inviteRows ?? []) as { id: string; email: string; role: string; created_at: string }[];
+  const isOwner = members.some((m) => m.is_me && m.role === "owner");
 
   const { data: quotes } = await supabase
     .from("quotes")
@@ -120,6 +152,43 @@ export default async function AccountPage() {
             </table>
           </div>
         )}
+      </section>
+
+      <section aria-labelledby="team-h" className="card flex flex-col gap-4 p-6">
+        <div>
+          <h2 id="team-h" className="text-[19px] font-semibold">Сотрудники</h2>
+          <p className="text-sm text-muted-foreground">
+            Все сотрудники видят цены, корзину, КП и счета компании.{isOwner ? " Пригласите закупщиков и бухгалтера по email." : ""}
+          </p>
+        </div>
+        <ul className="flex flex-col divide-y divide-steel-100">
+          {members.map((m) => (
+            <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+              <div>
+                <div className="font-semibold">
+                  {m.full_name || m.email} {m.is_me && <span className="font-normal text-muted-foreground">(вы)</span>}
+                </div>
+                <div className="text-[13px] text-muted-foreground">
+                  {roleLabels[m.role] ?? m.role} · {m.email}
+                  {m.phone ? ` · ${m.phone}` : ""}
+                </div>
+              </div>
+              {isOwner && !m.is_me && m.role !== "owner" && <RemoveMemberButton userId={m.user_id} name={m.full_name || m.email} />}
+            </li>
+          ))}
+          {openInvites.map((i) => (
+            <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+              <div>
+                <div className="font-semibold">{i.email}</div>
+                <div className="text-[13px] text-muted-foreground">
+                  {roleLabels[i.role] ?? i.role} · приглашён {formatDocDate(i.created_at)}, ещё не вошёл
+                </div>
+              </div>
+              {isOwner && <RevokeInviteButton inviteId={i.id} />}
+            </li>
+          ))}
+        </ul>
+        {isOwner && <InviteForm />}
       </section>
     </div>
   );
