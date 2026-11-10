@@ -2,10 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { FileDown, Receipt } from "lucide-react";
-import { getUser } from "@/lib/supabase/server";
+import { getSupabase, getUser } from "@/lib/supabase/server";
 import { deliveryLabel, documentErrorText, formatDocDate, getQuoteDoc } from "@/lib/documents";
 import { formatTenge } from "@/lib/money";
 import { siteConfig } from "@/config/site";
+import { ReorderButton } from "@/components/cart/reorder-button";
+import { buildReorder, type CatalogProduct } from "@/lib/reorder";
 import { issueInvoice } from "./actions";
 
 export const metadata: Metadata = { title: "Коммерческое предложение" };
@@ -22,6 +24,14 @@ export default async function QuotePage({ params, searchParams }: Props) {
 
   const expired = doc.valid_until < new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Almaty" });
   const issue = issueInvoice.bind(null, doc.id);
+
+  // повтор заказа — по текущему каталогу: снятые с продажи позиции пропускаются
+  const ids = [...new Set(doc.lines.map((l) => l.product_id).filter((x): x is string => Boolean(x)))];
+  const supabase = await getSupabase();
+  const { data: current } = ids.length && supabase
+    ? await supabase.from("products").select("id, name, unit, price_kzt, is_active").in("id", ids)
+    : { data: [] };
+  const reorder = buildReorder(doc.lines, (current ?? []) as CatalogProduct[]);
 
   return (
     <div className="container flex flex-col gap-5 py-8">
@@ -51,11 +61,18 @@ export default async function QuotePage({ params, searchParams }: Props) {
                 <Receipt className="h-[18px] w-[18px]" aria-hidden="true" /> Выставить счёт
               </button>
             </form>
-          ) : (
+          ) : reorder.items.length === 0 ? (
             <Link href="/catalog" className="btn-signal">Собрать новый заказ</Link>
-          )}
+          ) : null}
+          <ReorderButton items={reorder.items} unavailable={reorder.unavailable} primary={expired && !doc.order?.invoice_number} />
         </div>
       </section>
+      {reorder.items.length > 0 && reorder.unavailable.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          При повторе не попадут в корзину — сняты с продажи: {reorder.unavailable.join(", ")}. Подберём замену по телефону{" "}
+          <a href={siteConfig.phoneHref} className="font-semibold text-foreground">{siteConfig.phone}</a>.
+        </p>
+      )}
 
       {invoice_error && !doc.order && (
         <p role="alert" className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">

@@ -26,6 +26,7 @@ export type DocCompany = {
 
 export type DocLine = {
   line_no: number;
+  product_id: string | null;
   name: string;
   mark: string | null;
   unit: string;
@@ -78,7 +79,7 @@ export async function getQuoteDoc(id: string): Promise<QuoteDoc | null> {
        delivery_kzt, goods_kzt, total_kzt, vat_kzt,
        companies(name, legal_form, bin, address),
        sellers(name, bin, director, address, bank_name, bik, iban, kbe, knp, phone, vat_payer, stamp_url, signature_url),
-       quote_items(line_no, name, mark, unit, qty, price_kzt),
+       quote_items(line_no, product_id, name, mark, unit, qty, price_kzt),
        orders(id, invoice_number, created_at, status, total_kzt, vat_kzt)`,
     )
     .eq("id", id)
