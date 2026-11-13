@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Check, Upload } from "lucide-react";
-import { categories, siteConfig } from "@/config/site";
+import { categories, siteConfig, siteUrl } from "@/config/site";
 import { CategoryIcon } from "@/components/catalog/category-icon";
 
 const steps = [
@@ -16,9 +16,24 @@ const terms = [
   { title: "Товар под заказ", text: "Найдём позицию, которой нет в каталоге: Казахстан, Россия, Китай. Предоплата 100%." },
 ];
 
+/** Разметка организации для поисковиков (schema.org). */
+const orgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "HardwareStore",
+  name: siteConfig.name,
+  description: siteConfig.description,
+  url: siteUrl,
+  telephone: siteConfig.phone.replace(/[^+\d]/g, ""),
+  email: siteConfig.email,
+  address: { "@type": "PostalAddress", addressLocality: siteConfig.city, addressCountry: "KZ" },
+  areaServed: { "@type": "Country", name: "Казахстан" },
+  currenciesAccepted: "KZT",
+};
+
 export default function HomePage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
       <section className="container flex flex-wrap items-stretch gap-10 py-14 md:py-16">
         <div className="flex min-w-0 flex-[999_1_560px] flex-col justify-center gap-6">
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-signal-800">

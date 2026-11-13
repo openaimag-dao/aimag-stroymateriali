@@ -6,7 +6,9 @@ import { isEmailConfigured, salesNotifyEmails, sendEmail, type Attachment } from
 import { pdfFileNames, renderInvoicePdf, renderQuotePdf } from "@/lib/pdf";
 import { getSupabase } from "@/lib/supabase/server";
 
-const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+import { siteUrl as publicSiteUrl } from "@/config/site";
+
+const siteUrl = () => publicSiteUrl;
 
 function emailInput(doc: QuoteDoc): DocEmailInput {
   return {

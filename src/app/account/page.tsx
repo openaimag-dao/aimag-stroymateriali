@@ -10,7 +10,7 @@ import { AcceptInviteCard, InviteForm, RemoveMemberButton, RevokeInviteButton, r
 import { companyTitle } from "@/lib/company-title";
 import { signOut } from "./actions";
 
-export const metadata: Metadata = { title: "Кабинет компании" };
+export const metadata: Metadata = { title: "Кабинет компании", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 const statuses: Record<string, { label: string; cls: string }> = {

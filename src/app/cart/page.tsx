@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CartView, type CheckoutStatus } from "@/components/cart/cart-view";
 import { getSupabase } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Корзина" };
+export const metadata: Metadata = { title: "Корзина", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 async function checkoutStatus(): Promise<CheckoutStatus> {

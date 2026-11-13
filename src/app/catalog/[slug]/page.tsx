@@ -17,7 +17,14 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const page = await getCategoryPage(slug, {});
-  return { title: page ? `${page.category.name} оптом` : "Каталог" };
+  if (!page) return { title: "Каталог" };
+  const name = page.category.name;
+  const parts = page.children.length ? `: ${page.children.map((c) => c.name.toLowerCase()).join(", ")}` : "";
+  return {
+    title: `${name} оптом в Шымкенте`,
+    description: `${name} оптом${parts}. Цены с НДС для ТОО и ИП, оптовые скидки от объёма, КП и счёт за минуты, доставка по Казахстану.`,
+    alternates: { canonical: `/catalog/${page.category.slug}` },
+  };
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {

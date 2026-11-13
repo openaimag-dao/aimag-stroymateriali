@@ -1,3 +1,6 @@
+/** Публичный адрес сайта для canonical, sitemap и писем. */
+export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://aimag-stroymateriali.vercel.app").replace(/\/$/, "");
+
 export const siteConfig = {
   name: "AIMAG Stroymateriali",
   description:

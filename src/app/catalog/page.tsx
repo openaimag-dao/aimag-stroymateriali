@@ -5,7 +5,12 @@ import { listProducts } from "@/lib/catalog";
 import { ProductList } from "@/components/catalog/product-list";
 import { CategoryIcon } from "@/components/catalog/category-icon";
 
-export const metadata: Metadata = { title: "Каталог" };
+export const metadata: Metadata = {
+  title: "Каталог стройматериалов оптом",
+  description:
+    "Кровля, фасад, трубы и сантехника, кабель, сухие смеси, утеплитель и металлопрокат оптом в Шымкенте. Цены с НДС для ТОО и ИП, КП и счёт за минуты, доставка по Казахстану.",
+  alternates: { canonical: "/catalog" },
+};
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {

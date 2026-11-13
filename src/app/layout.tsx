@@ -3,7 +3,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { CartProvider } from "@/components/cart/cart-provider";
-import { siteConfig } from "@/config/site";
+import { siteConfig, siteUrl } from "@/config/site";
 import "./globals.css";
 
 const sans = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-sans", display: "swap" });
@@ -15,6 +15,15 @@ export const metadata: Metadata = {
     template: `%s · ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  metadataBase: new URL(siteUrl),
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "ru_KZ",
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} — стройматериалы оптом для ТОО и ИП`,
+    description: siteConfig.description,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
