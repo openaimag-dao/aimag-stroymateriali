@@ -5,7 +5,7 @@ import { getUser } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { EmailLoginForm } from "@/components/auth/email-login-form";
 
-export const metadata: Metadata = { title: "Вход для юрлиц" };
+export const metadata: Metadata = { title: "Вход для юрлиц", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 const perks = [

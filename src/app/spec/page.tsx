@@ -4,7 +4,11 @@ import { getSupabase } from "@/lib/supabase/server";
 import { siteConfig } from "@/config/site";
 import { SpecUploadForm } from "@/components/spec/spec-upload-form";
 
-export const metadata: Metadata = { title: "Загрузить спецификацию" };
+export const metadata: Metadata = {
+  title: "Загрузить спецификацию — КП за 15 минут",
+  description: "Загрузите заявку или ведомость объёмов в Excel, PDF, Word или фото — сопоставим позиции с каталогом и пришлём КП с НДС.",
+  alternates: { canonical: "/spec" },
+};
 export const dynamic = "force-dynamic";
 // разбор спецификации ИИ идёт после ответа в той же функции и может занять несколько минут
 export const maxDuration = 300;
