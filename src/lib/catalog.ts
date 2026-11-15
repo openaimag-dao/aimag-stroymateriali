@@ -33,7 +33,25 @@ export async function listProducts(opts: { categorySlug?: string; q?: string }):
   if (!supabase) return { status: "not_configured" };
 
   const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return { status: "login_required" };
+  if (!auth.user) {
+    // гость: поиск через публичную функцию (цены с НДС, без закупки)
+    if (!opts.q) return { status: "login_required" };
+    const { data, error } = await supabase.rpc("catalog_search_public", { p_q: opts.q });
+    if (error) return { status: "error", message: error.message };
+    return {
+      status: "ok",
+      products: ((data ?? []) as Row[]).map((p) => ({
+        id: p.id as string,
+        name: p.name as string,
+        spec: (p.spec as string | null) ?? null,
+        unit: p.unit as string,
+        price_kzt: Number(p.price_kzt),
+        in_stock: Boolean(p.in_stock),
+        lead_time_days: (p.lead_time_days as number | null) ?? null,
+        price_tiers: ((p.tiers as Row[]) ?? []).map((t) => ({ min_qty: Number(t.min_qty), price_kzt: Number(t.price_kzt) })),
+      })),
+    };
+  }
 
   let query = supabase
     .from("products")
@@ -126,7 +144,7 @@ export async function getCategoryPage(slug: string, filters: Filters): Promise<C
           .eq("is_active", true)
           .order("name")
           .limit(1000)
-      : // гостю — те же товары без цен (функция не отдаёт цены и закупку)
+      : // гостю — те же товары с ценой продажи и оптовыми уровнями (без закупки и наценки)
         supabase.rpc("catalog_products_public", { p_category_ids: subtreeIds }),
   ]);
 
@@ -161,7 +179,7 @@ export async function getCategoryPage(slug: string, filters: Filters): Promise<C
       const a = (Array.isArray(pa.attributes) ? pa.attributes[0] : pa.attributes) as Row | null;
       if (a) attrsMap[a.code as string] = pa.value as string;
     }
-    const tiers = ((p.price_tiers as Row[]) ?? []).map((t) => ({ minQty: Number(t.min_qty), priceKzt: Number(t.price_kzt) }));
+    const tiers = ((p.price_tiers as Row[]) ?? (p.tiers as Row[]) ?? []).map((t) => ({ minQty: Number(t.min_qty), priceKzt: Number(t.price_kzt) }));
     const sku: Sku = {
       id: p.id as string,
       name: p.name as string,
@@ -202,7 +220,7 @@ export async function getCategoryPage(slug: string, filters: Filters): Promise<C
       skus: skusByGroup.get(g.id as string) ?? [],
     }))
     // with filters on, hide groups that have no matching variant (guests see all — no variant data)
-    .filter((g) => !signedIn || !hasFilters || g.skus.length > 0);
+    .filter((g) => !hasFilters || g.skus.length > 0);
 
   return { ...base, status: "ok", signedIn, attrs, groups, loose };
 }

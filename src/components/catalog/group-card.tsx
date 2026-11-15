@@ -6,13 +6,13 @@ import { AddToCart } from "@/components/cart/add-to-cart";
 import { formatTenge } from "@/lib/money";
 import { optionCompatible, pickSku, type CatalogAttr, type CatalogGroup, type Sku } from "@/lib/catalog-types";
 
-type Props = { group: CatalogGroup; attrs: CatalogAttr[]; signedIn: boolean };
+type Props = { group: CatalogGroup; attrs: CatalogAttr[]; signedIn?: boolean };
 
 function firstSku(skus: Sku[]): Sku | undefined {
   return skus.find((s) => s.inStock) ?? skus[0];
 }
 
-export function GroupCard({ group, attrs, signedIn }: Props) {
+export function GroupCard({ group, attrs }: Props) {
   const [skuId, setSkuId] = useState(() => firstSku(group.skus)?.id);
   const sku = group.skus.find((s) => s.id === skuId) ?? firstSku(group.skus);
 
@@ -34,17 +34,10 @@ export function GroupCard({ group, attrs, signedIn }: Props) {
       </header>
 
       {!sku ? (
-        signedIn ? (
-          <p className="rounded-lg bg-steel-50 p-3 text-sm text-steel-500">
-            Позиции этой группы добавляются из прайсов поставщиков. Нужно сейчас?{" "}
-            <Link href="/spec" className="font-semibold text-foreground underline">Загрузите спецификацию</Link>
-          </p>
-        ) : (
-          <p className="rounded-lg bg-steel-50 p-3 text-sm text-steel-500">
-            Цены, цвета и наличие — после входа.{" "}
-            <Link href="/login" className="font-semibold text-foreground underline">Войти по БИН</Link>
-          </p>
-        )
+        <p className="rounded-lg bg-steel-50 p-3 text-sm text-steel-500">
+          Позиции этой группы добавляются из прайсов поставщиков. Нужно сейчас?{" "}
+          <Link href="/spec" className="font-semibold text-foreground underline">Загрузите спецификацию</Link>
+        </p>
       ) : (
         <>
           {axes.map((axis) => {

@@ -76,7 +76,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           <section aria-label="Товары" className="flex min-w-0 flex-[999_1_640px] flex-col gap-4">
             {!signedIn && (
               <p className="rounded-lg bg-signal-50 p-4 text-[15px]">
-                Оптовые цены и корзина — после входа: зарегистрируйте компанию по БИН за минуту.{" "}
+                Цены с НДС для всех. Чтобы получить КП и счёт на свою компанию — войдите по БИН.{" "}
                 <Link href={`/login?next=${encodeURIComponent(action)}`} className="font-semibold underline">Войти по БИН</Link>
               </p>
             )}
