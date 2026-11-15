@@ -29,7 +29,9 @@ export function ProductList({ result }: { result: CatalogResult }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">Цены с НДС 16%. Оптовая цена применяется автоматически от указанного объёма.</p>
+      {result.products.some((p) => p.price_kzt !== null) && (
+        <p className="text-sm text-muted-foreground">Цены с НДС 16%. Оптовая цена применяется автоматически от указанного объёма.</p>
+      )}
       {result.products.map((p) => {
         const tier = [...p.price_tiers].sort((a, b) => a.min_qty - b.min_qty)[0];
         return (
@@ -47,15 +49,24 @@ export function ProductList({ result }: { result: CatalogResult }) {
                 </span>
               )}
             </div>
-            <div className="flex flex-[0_1_200px] flex-col gap-1">
-              <span className="text-xl font-bold tabular-nums">{formatTenge(p.price_kzt)}</span>
-              {tier && (
-                <span className="text-[13px] text-muted-foreground">
-                  опт от {tier.min_qty} {p.unit}: <b className="text-foreground">{formatTenge(tier.price_kzt)}</b>
-                </span>
-              )}
-            </div>
-            <AddToCart productId={p.id} name={p.name} unit={p.unit} priceKzt={p.price_kzt} />
+            {p.price_kzt === null ? (
+              <>
+                <span className="flex-[0_1_200px] text-base font-semibold">Цена после входа</span>
+                <Link href="/login" className="btn-signal">Войти и узнать цену</Link>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-[0_1_200px] flex-col gap-1">
+                  <span className="text-xl font-bold tabular-nums">{formatTenge(p.price_kzt)}</span>
+                  {tier && (
+                    <span className="text-[13px] text-muted-foreground">
+                      опт от {tier.min_qty} {p.unit}: <b className="text-foreground">{formatTenge(tier.price_kzt)}</b>
+                    </span>
+                  )}
+                </div>
+                <AddToCart productId={p.id} name={p.name} unit={p.unit} priceKzt={p.price_kzt} />
+              </>
+            )}
           </article>
         );
       })}
