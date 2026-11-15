@@ -17,7 +17,7 @@ export type Sku = {
   name: string;
   spec: string | null;
   unit: string;
-  priceKzt: number;
+  priceKzt: number | null; // null — гость, цена после входа
   inStock: boolean;
   leadTimeDays: number | null;
   tiers: { minQty: number; priceKzt: number }[];
@@ -29,7 +29,7 @@ export type CatalogGroup = {
   name: string;
   description: string | null;
   categoryName: string;
-  skus: Sku[]; // empty for guests (prices after login)
+  skus: Sku[]; // для гостя — без цен
 };
 
 export type CategoryNode = { id: number; parentId: number | null; slug: string; name: string; sort: number };

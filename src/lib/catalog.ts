@@ -15,7 +15,7 @@ export type Product = {
   name: string;
   spec: string | null;
   unit: string;
-  price_kzt: number;
+  price_kzt: number | null; // null — гость, цена после входа
   in_stock: boolean;
   lead_time_days: number | null;
   price_tiers: { min_qty: number; price_kzt: number }[];
@@ -126,7 +126,8 @@ export async function getCategoryPage(slug: string, filters: Filters): Promise<C
           .eq("is_active", true)
           .order("name")
           .limit(1000)
-      : Promise.resolve({ data: [] as Row[], error: null }),
+      : // гостю — те же товары без цен (функция не отдаёт цены и закупку)
+        supabase.rpc("catalog_products_public", { p_category_ids: subtreeIds }),
   ]);
 
   const err = attrsRes.error ?? groupsRes.error ?? productsRes.error;
@@ -155,6 +156,7 @@ export async function getCategoryPage(slug: string, filters: Filters): Promise<C
   const loose: Product[] = [];
   for (const p of (productsRes.data ?? []) as Row[]) {
     const attrsMap: Record<string, string> = {};
+    if (p.attrs && typeof p.attrs === "object") Object.assign(attrsMap, p.attrs as Record<string, string>);
     for (const pa of (p.product_attributes as Row[]) ?? []) {
       const a = (Array.isArray(pa.attributes) ? pa.attributes[0] : pa.attributes) as Row | null;
       if (a) attrsMap[a.code as string] = pa.value as string;
@@ -165,7 +167,7 @@ export async function getCategoryPage(slug: string, filters: Filters): Promise<C
       name: p.name as string,
       spec: (p.spec as string | null) ?? null,
       unit: p.unit as string,
-      priceKzt: Number(p.price_kzt),
+      priceKzt: p.price_kzt === undefined || p.price_kzt === null ? null : Number(p.price_kzt),
       inStock: Boolean(p.in_stock),
       leadTimeDays: (p.lead_time_days as number | null) ?? null,
       tiers,

@@ -103,10 +103,16 @@ export function GroupCard({ group, attrs, signedIn }: Props) {
 
           <div className="flex flex-wrap items-end justify-between gap-4 border-t pt-4">
             <div className="flex flex-col gap-1">
-              <span className="text-2xl font-bold tabular-nums">
-                {formatTenge(sku.priceKzt)}
-                <span className="text-base font-medium text-muted-foreground">/{sku.unit}</span>
-              </span>
+              {sku.priceKzt === null ? (
+                <span className="text-base font-semibold">
+                  Цена после входа<span className="font-medium text-muted-foreground"> · за {sku.unit}</span>
+                </span>
+              ) : (
+                <span className="text-2xl font-bold tabular-nums">
+                  {formatTenge(sku.priceKzt)}
+                  <span className="text-base font-medium text-muted-foreground">/{sku.unit}</span>
+                </span>
+              )}
               {sku.tiers.length > 0 && (
                 <span className="text-[13px] text-muted-foreground">
                   {[...sku.tiers]
@@ -123,7 +129,11 @@ export function GroupCard({ group, attrs, signedIn }: Props) {
                 </span>
               )}
             </div>
-            <AddToCart key={sku.id} productId={sku.id} name={sku.name} unit={sku.unit} priceKzt={sku.priceKzt} />
+            {sku.priceKzt === null ? (
+              <Link href="/login" className="btn-signal">Войти и узнать цену</Link>
+            ) : (
+              <AddToCart key={sku.id} productId={sku.id} name={sku.name} unit={sku.unit} priceKzt={sku.priceKzt} />
+            )}
           </div>
         </>
       )}
