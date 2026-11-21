@@ -59,6 +59,12 @@ export const categories = [
     items: "Сайдинг, фасадные панели, подсистема вентфасада",
     icon: "Building2",
   },
+  {
+    slug: "tools",
+    name: "Инструменты и оборудование",
+    items: "Перфораторы, УШМ, шуруповёрты, бетономешалки, тачки, круги и буры",
+    icon: "Hammer",
+  },
 ] as const;
 
 export type CategorySlug = (typeof categories)[number]["slug"];
