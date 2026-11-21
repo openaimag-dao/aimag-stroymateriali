@@ -87,38 +87,31 @@ export async function commitImport(form: FormData): Promise<CommitResult> {
       }
     }
 
-    const now = new Date().toISOString();
     let written = 0;
     for (const part of chunk(valid, 200)) {
-      const { data: saved, error } = await supabase
-        .from("products")
-        .upsert(
-          part.map((r) => ({
-            sku: r.sku,
-            category_id: r.categoryId,
-            group_id: r.groupName ? (groupId.get(`${r.categoryId}|${r.groupName.toLowerCase()}`) ?? null) : null,
-            name: r.name,
-            spec: r.spec,
-            unit: r.unit,
-            purchase_price: r.purchase,
-            purchase_currency: r.currency,
-            logistics_kzt: r.logisticsKzt,
-            markup_pct: r.markupPct,
-            price_kzt: r.priceKzt,
-            price_locked: r.priceLocked,
-            price_updated_at: now,
-            in_stock: r.inStock,
-            lead_time_days: r.leadTimeDays,
-            is_active: true,
-            import_batch: batch,
-            updated_at: now,
-          })),
-          { onConflict: "sku" },
-        )
-        .select("id, sku");
+      // через функцию персонала: колонки закупки закрыты для чтения через API (миграция 0012)
+      const { data: saved, error } = await supabase.rpc("staff_import_products", {
+        p_rows: part.map((r) => ({
+          sku: r.sku,
+          category_id: r.categoryId,
+          group_id: r.groupName ? (groupId.get(`${r.categoryId}|${r.groupName.toLowerCase()}`) ?? null) : null,
+          name: r.name,
+          spec: r.spec,
+          unit: r.unit,
+          purchase_price: r.purchase,
+          purchase_currency: r.currency,
+          logistics_kzt: r.logisticsKzt,
+          markup_pct: r.markupPct,
+          price_kzt: r.priceKzt,
+          price_locked: r.priceLocked,
+          in_stock: r.inStock,
+          lead_time_days: r.leadTimeDays,
+          import_batch: batch,
+        })),
+      });
       if (error) throw new Error(`Строки ${written + 1}–${written + part.length}: ${error.message}`);
 
-      const idBySku = new Map((saved ?? []).map((p) => [p.sku as string, p.id as string]));
+      const idBySku = new Map(((saved ?? []) as { id: string; sku: string }[]).map((p) => [p.sku, p.id]));
       const ids = [...idBySku.values()];
       const attrs = part.flatMap((r) => r.attrs.map((a) => ({ product_id: idBySku.get(r.sku)!, attribute_id: a.attributeId, value: a.value })));
       const tiers = part.flatMap((r) => (r.tier ? [{ product_id: idBySku.get(r.sku)!, min_qty: r.tier.minQty, price_kzt: r.tier.priceKzt }] : []));

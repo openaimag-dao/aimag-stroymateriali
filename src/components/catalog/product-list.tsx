@@ -37,7 +37,9 @@ export function ProductList({ result }: { result: CatalogResult }) {
         return (
           <article key={p.id} className="card flex flex-wrap items-center gap-x-6 gap-y-4 px-5 py-4">
             <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-1.5">
-              <h2 className="text-[17px] font-semibold leading-snug">{p.name}</h2>
+              <h2 className="text-[17px] font-semibold leading-snug">
+                <Link href={`/product/${p.id}`} className="underline-offset-4 hover:underline">{p.name}</Link>
+              </h2>
               <span className="text-[13px] text-muted-foreground">
                 {p.spec ? `${p.spec} · ` : ""}за {p.unit}
               </span>

@@ -114,6 +114,9 @@ export function GroupCard({ group, attrs }: Props) {
                     .join(" · ")}
                 </span>
               )}
+              <Link href={`/product/${sku.id}`} className="text-[13px] text-muted-foreground underline underline-offset-4">
+                {sku.name} — подробнее
+              </Link>
               {sku.inStock ? (
                 <span className="badge self-start bg-emerald-50 text-emerald-800">На складе</span>
               ) : (

@@ -13,7 +13,7 @@ export function AddToCart({ productId, name, unit, priceKzt, defaultQty = 1 }: P
   const inputId = `qty-${productId}`;
 
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex flex-wrap items-center gap-2.5">
       <label htmlFor={inputId} className="text-[13px] text-muted-foreground">
         Кол-во, {unit}
       </label>
@@ -27,7 +27,7 @@ export function AddToCart({ productId, name, unit, priceKzt, defaultQty = 1 }: P
       />
       <button
         type="button"
-        className="btn-signal"
+        className="btn-signal whitespace-nowrap"
         onClick={() => {
           add({ productId, name, unit, priceKzt, qty });
           setAdded(true);
