@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./logo";
 import { siteConfig } from "@/config/site";
+import { waLink } from "@/lib/whatsapp";
 
 export function Footer() {
   return (
@@ -14,6 +15,7 @@ export function Footer() {
         </div>
         <div className="flex flex-col gap-2">
           <a href={siteConfig.phoneHref} className="text-lg font-semibold text-white">{siteConfig.phone}</a>
+          <a href={waLink()} target="_blank" rel="noopener" className="text-white underline">WhatsApp: {siteConfig.phone}</a>
           <a href={`mailto:${siteConfig.email}`} className="text-white underline">{siteConfig.email}</a>
         </div>
         <nav aria-label="Нижнее меню" className="flex flex-col gap-2 text-[15px] text-white">

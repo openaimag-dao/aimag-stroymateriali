@@ -9,6 +9,7 @@ import { totals } from "@/lib/pricing";
 import { formatTenge } from "@/lib/money";
 import { siteConfig } from "@/config/site";
 import { checkout } from "@/app/cart/actions";
+import { cartMessage, waLink } from "@/lib/whatsapp";
 
 export type CheckoutStatus = "guest" | "no_company" | "ready";
 
@@ -171,6 +172,14 @@ export function CartView({ status }: { status: CheckoutStatus }) {
         {status === "no_company" && (
           <Link href="/account" className="btn-signal h-[52px] text-base">Указать данные компании</Link>
         )}
+        <a
+          href={waLink(cartMessage(items, deliveries.find((d) => d.id === delivery)?.name))}
+          target="_blank"
+          rel="noopener"
+          className="btn-outline h-12 text-[15px]"
+        >
+          Отправить заказ в WhatsApp
+        </a>
         {error && (
           <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>
         )}
