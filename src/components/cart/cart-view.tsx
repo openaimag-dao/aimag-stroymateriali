@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { FileText, Trash2 } from "lucide-react";
 import { useCart } from "./cart-provider";
 import { totals } from "@/lib/pricing";
 import { formatTenge } from "@/lib/money";
 import { siteConfig } from "@/config/site";
-import { checkout } from "@/app/cart/actions";
+import { checkout, estimateDelivery } from "@/app/cart/actions";
+import { cityDeliveryNote, formatWeight, type DeliveryEstimate } from "@/lib/delivery";
 import { cartMessage, waLink } from "@/lib/whatsapp";
 
 export type CheckoutStatus = "guest" | "no_company" | "ready";
@@ -27,6 +28,27 @@ export function CartView({ status }: { status: CheckoutStatus }) {
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [estimate, setEstimate] = useState<DeliveryEstimate | null>(null);
+
+  // вес и стоимость доставки пересчитываются при изменении корзины (с небольшой задержкой при вводе количества)
+  const cartKey = items.map((i) => `${i.productId}:${i.qty}`).join(",");
+  useEffect(() => {
+    if (!cartKey) return setEstimate(null);
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const lines = cartKey.split(",").map((x) => {
+        const [productId, qty] = x.split(":");
+        return { productId, qty: Number(qty) };
+      });
+      const res = await estimateDelivery(lines).catch(() => null);
+      if (!cancelled) setEstimate(res);
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [cartKey]);
+  const cityCost = delivery === "city" && estimate?.unknownLines === 0 ? estimate.costKzt : null;
 
   function submit(withInvoice: boolean) {
     setError("");
@@ -136,7 +158,11 @@ export function CartView({ status }: { status: CheckoutStatus }) {
                 Адрес объекта
                 <input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={300} className="field" placeholder="Улица, дом, ориентир" />
               </label>
-              <p className="w-full text-sm text-steel-500">Стоимость доставки менеджер рассчитает по весу заказа и адресу и выставит отдельно.</p>
+              <p className="w-full text-sm text-steel-500">
+                {delivery === "city" && estimate
+                  ? cityDeliveryNote(estimate)
+                  : `Стоимость доставки менеджер рассчитает по весу${estimate?.unknownLines === 0 ? ` (${formatWeight(estimate.weightKg)})` : ""} и адресу и добавит в КП.`}
+              </p>
             </div>
           )}
         </section>
@@ -147,10 +173,11 @@ export function CartView({ status }: { status: CheckoutStatus }) {
         <dl className="flex flex-col gap-2.5 text-[15px] tabular-nums">
           <Row label="Товары без НДС" value={formatTenge(t.netKzt)} />
           <Row label={`НДС ${siteConfig.vatPct}%`} value={formatTenge(t.vatKzt)} />
-          <Row label="Доставка" value={delivery === "pickup" ? formatTenge(0) : "отдельно"} />
+          <Row label="Доставка" value={delivery === "pickup" ? formatTenge(0) : cityCost !== null ? formatTenge(cityCost) : "отдельно"} />
+          {estimate && estimate.unknownLines === 0 && <Row label="Вес заказа" value={formatWeight(estimate.weightKg)} />}
           <div className="flex justify-between gap-3 border-t pt-3 text-xl font-bold">
             <dt>К оплате с НДС</dt>
-            <dd>{formatTenge(t.totalKzt)}</dd>
+            <dd>{formatTenge(t.totalKzt + (cityCost ?? 0))}</dd>
           </div>
         </dl>
         {status === "ready" && (

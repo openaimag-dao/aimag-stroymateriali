@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getSupabase } from "@/lib/supabase/server";
 import { documentErrorCode, documentErrorText } from "@/lib/documents";
 import { emailQuoteToBuyer, notifyStaffAboutQuote } from "@/lib/notifications";
+import { parseEstimate, type DeliveryEstimate } from "@/lib/delivery";
 
 // Only ids and quantities come from the browser; prices are taken from the DB in create_quote.
 const schema = z.object({
@@ -54,4 +55,22 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
 
   revalidatePath("/account");
   return { quoteId: quoteId as string, invoiceErrorCode };
+}
+
+const estimateSchema = z
+  .array(z.object({ productId: z.string().uuid(), qty: z.number().positive().max(1_000_000) }))
+  .min(1)
+  .max(200);
+
+/** Вес заказа и стоимость доставки по городу; доступно и гостям (тарифы публичные). */
+export async function estimateDelivery(items: { productId: string; qty: number }[]): Promise<DeliveryEstimate | null> {
+  const parsed = estimateSchema.safeParse(items);
+  if (!parsed.success) return null;
+  const supabase = await getSupabase();
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("delivery_estimate", {
+    p_items: parsed.data.map((i) => ({ product_id: i.productId, qty: i.qty })),
+  });
+  if (error) return null;
+  return parseEstimate((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
 }
