@@ -65,6 +65,24 @@ export const categories = [
     items: "Перфораторы, УШМ, шуруповёрты, бетономешалки, тачки, круги и буры",
     icon: "Hammer",
   },
+  {
+    slug: "fasteners",
+    name: "Крепёж",
+    items: "Саморезы, анкеры, дюбель-гвозди",
+    icon: "Nut",
+  },
+  {
+    slug: "paints",
+    name: "Лакокраска и химия",
+    items: "Грунтовка, эмали, фасадная краска, пена, герметики",
+    icon: "PaintRoller",
+  },
+  {
+    slug: "ppe",
+    name: "Спецодежда и СИЗ",
+    items: "Перчатки, каски, сигнальные жилеты",
+    icon: "HardHat",
+  },
 ] as const;
 
 export type CategorySlug = (typeof categories)[number]["slug"];
