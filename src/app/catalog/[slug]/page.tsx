@@ -49,6 +49,18 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         / {category.name}
       </nav>
       <h1 className="mb-4 font-display text-[34px] font-semibold tracking-tight">{category.name}</h1>
+      {(parent ?? category).slug === "roofing" && (
+        <Link
+          href="/calc/roof"
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-signal/40 bg-signal/10 px-5 py-4 hover:border-signal"
+        >
+          <span>
+            <b className="font-semibold">Калькулятор кровли</b>
+            <span className="text-steel-500"> — покрытие, конёк, мембрана, саморезы и водосток по размерам дома</span>
+          </span>
+          <span className="font-semibold text-signal-800">Рассчитать →</span>
+        </Link>
+      )}
 
       {(children.length > 0 || parent) && (
         <nav aria-label={`Разделы: ${(parent ?? category).name}`} className="mb-6 flex flex-wrap gap-2">

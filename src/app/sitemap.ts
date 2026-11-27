@@ -28,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/catalog`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/spec`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl}/calc/roof`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
   ];
   for (const slug of await categorySlugs()) {
     pages.push({ url: `${siteUrl}/catalog/${slug}`, lastModified: now, changeFrequency: "daily", priority: 0.8 });
