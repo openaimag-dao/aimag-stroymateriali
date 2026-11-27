@@ -31,6 +31,7 @@ export async function Header() {
         <nav aria-label="Основное меню" className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[15px] font-medium">
           <Link href="/catalog" className="hover:text-signal-800">Каталог</Link>
           <Link href="/spec" className="hover:text-signal-800">Спецификация</Link>
+          <Link href="/calc/roof" className="hover:text-signal-800">Калькулятор кровли</Link>
           <CartLink />
           <a href={siteConfig.phoneHref} className="font-semibold">{siteConfig.phone}</a>
           {staff && <Link href="/admin" className="font-semibold text-signal-800">Админка</Link>}
