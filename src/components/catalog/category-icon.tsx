@@ -1,6 +1,6 @@
-import { Building2, Construction, Hammer, Home, Layers, PaintBucket, Wrench, Zap, type LucideIcon } from "lucide-react";
+import { Building2, Construction, Hammer, HardHat, Home, Layers, Nut, PaintBucket, PaintRoller, Wrench, Zap, type LucideIcon } from "lucide-react";
 
-const icons: Record<string, LucideIcon> = { Zap, PaintBucket, Layers, Construction, Hammer, Wrench, Home, Building2 };
+const icons: Record<string, LucideIcon> = { Zap, PaintBucket, Layers, Construction, Hammer, Wrench, Home, Building2, Nut, PaintRoller, HardHat };
 
 export function CategoryIcon({ name, className }: { name: string; className?: string }) {
   const Icon = icons[name] ?? Layers;
